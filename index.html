@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>念能力测试</title>
+
+<style>
+body{margin:0;font-family:-apple-system;background:#0c0f1f;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;}
+.container{width:100%;max-width:420px;height:100vh;position:relative;overflow:hidden;}
+.page{position:absolute;width:100%;height:100%;padding:20px;box-sizing:border-box;left:100%;transition:.4s;overflow-y:auto;}
+.page.active{left:0;}
+h2{font-size:16px;line-height:1.6;}
+.option{background:#1a1f3a;padding:12px;border-radius:10px;margin:8px 0;text-align:center;}
+.selected{background:#6c5ce7;}
+.progress{position:absolute;top:0;left:0;height:3px;background:#6c5ce7;width:0%;}
+.tip{color:#ff7675;font-size:13px;margin-top:8px;text-align:center;}
+.result{text-align:center;}
+.main{font-size:20px;margin-top:10px;}
+.analysis{margin-top:15px;line-height:1.6;}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+<div class="progress" id="bar"></div>
+<div id="pages"></div>
+</div>
+
+<script>
+
+const questions = [
+{q:"Q1、有一天，你在散步时看到两只丢弃的黑猫，此时你会怎么做？",options:{A:"带它们走",B:"不带它们走"}},
+{q:"Q2、的选项是「带回去」的理由或「不带回去」的理由，请选出你的理由。",options:{A:"无论如何都要养",B:"虽然想养，但会有人反对，所以找别人来养",C:"不想自己养，会找别人来养",D:"因为家里不能养宠物",E:"因为黑猫不吉利",F:"虽然很可爱，但总有一天会感到厌烦",G:"其它的理由"}},
+{q:"Q3、早上起来，天空昏暗，天气预报说有40%的机率会下雨，那么你出门时会带伞吗？",options:{A:"觉得一定会下雨，因此带伞出门",B:"似乎会下雨，带伞出门",C:"不带伞"}},
+{q:"Q4、你和朋友约好出去玩，你在约定的地点等待，但是时间到了朋友没出现，那么你大约会忍耐多久？",options:{A:"无法忍耐",B:"5分左右",C:"10分左右",D:"15分左右",E:"20分左右",F:"一直等下去"}},
+{q:"Q5、情况相反，你在约定的地方迟迟未出现，朋友似乎很生气，你会怎么道歉？",options:{A:"道歉，3日内向朋友解释清楚",B:"道歉，拚命取悦朋友",C:"道歉，从今以后提早20分到达",D:"解释，但不认错",E:"解释，并取悦朋友",F:"不会有这种事发生"}},
+{q:"Q6、早上起来后发现自己变成某种动物，是哪一种？",options:{A:"羊",B:"黑豹",C:"猴子",D:"老虎",E:"狼",F:"飞马",G:"狮子"}},
+{q:"Q7、为何想变成Q6的动物？",options:{A:"因为占卜结果",B:"喜欢这种动物",C:"一直想",D:"直觉"}},
+{q:"Q8、你最得意的科目是什么？",options:{A:"数理化",B:"语言",C:"音乐美术",D:"政治社会历史",E:"体育",F:"没有特别喜欢的科目"}},
+{q:"Q9、反之，你最讨厌的科目是什么？",options:{A:"数理化",B:"语言",C:"音乐美术",D:"政治社会历史",E:"体育",F:"没有特别讨厌的科目"}},
+{q:"Q10、假如你是贼的话，你第一次要偷什么？",options:{A:"人命",B:"钱",C:"钻石、宝石",D:"美术品",E:"古书",F:"不会成为贼"}},
+{q:"Q11、选出你认为属于自己的优点。",multi:true,options:{A:"规规距距",B:"有责任感",C:"可以信赖",D:"会厉害的技巧",E:"对自己严格",F:"有行动力",G:"有很多朋友",H:"善变",I:"唱歌画画俱佳",J:"利己主义",K:"对精细作业很在行",L:"随自我的步调行事"}},
+{q:"Q12、选出你认为属于自己的缺点。",multi:true,options:{A:"协调性差",B:"粗心",C:"说谎",D:"讨厌的人有10人以上",E:"小气，看重金钱",F:"不了解道理就无法同意",G:"自大",H:"为达目的不择手段",I:"容易焦躁",J:"心软、爱哭",K:"慢半拍",L:"意志不坚、发呆"}},
+{q:"Q13、要杀人的话会想杀那种人？",multi:true,options:{A:"自己的家人",B:"喜欢的人",C:"给自己大耻辱的人",D:"自己",E:"无差别千人斩",F:"背叛自己的人"}},
+{q:"Q14、你在什么时候会想哭？",multi:true,options:{A:"最重要的人死时",B:"悲伤时",C:"被甩时",D:"结婚时",E:"觉得感动时",F:"达成大目标的时候",G:"工作上遇到大失败的时候",H:"很长时间四周都没有人的时候",I:"痛的时候",J:"自尊受到伤害的时候",K:"朋友背叛的时候",L:"通常都不会哭"}},
+{q:"Q15、觉得魔术师很厉害？",bool:true},
+{q:"Q16、靠行动力抓住犯人的警官是错误的。",bool:true},
+{q:"Q17、书架上的书，卷数零零落落的感觉很讨厌？",bool:true},
+{q:"Q18、不会见异思迁吗？",bool:true},
+{q:"Q19、只要自己高兴做什么都可以？",bool:true},
+{q:"Q20、讨厌整理东西？",bool:true}
+];
+
+let current=0,answers={},scores={强化:0,放出:0,操作:0,变化:0,具现:0,特质:0};
+const pages=document.getElementById("pages");
+
+questions.forEach((q,i)=>{
+let div=document.createElement("div");
+div.className="page"+(i===0?" active":"");
+
+let html="<h2>"+q.q+"</h2><div class='tip' id='tip"+i+"'></div>";
+
+if(q.bool){
+["Y","N"].forEach(v=>{
+html+=`<div class="option" onclick="select(${i},'${v}',event)">${v}</div>`;
+});
+}else{
+for(let k in q.options){
+html+=`<div class="option" onclick="select(${i},'${k}',event)">${k} ${q.options[k]}</div>`;
+}
+}
+
+if(q.multi) html+=`<div class="option" onclick="next()">下一题</div>`;
+
+div.innerHTML=html;
+pages.appendChild(div);
+});
+
+function select(i,val,e){
+
+document.getElementById("tip"+i).innerText="";
+
+if(questions[i].multi){
+
+answers[i]=answers[i]||{};
+
+// Q13 特殊规则
+if(i===12){
+if(val==="E"){
+answers[i]={"E":true};
+e.target.parentNode.querySelectorAll(".option").forEach(o=>o.classList.remove("selected"));
+e.target.classList.add("selected");
+return;
+}
+if(answers[i]["E"] && val!=="D") return;
+}
+
+answers[i][val]=!answers[i][val];
+e.target.classList.toggle("selected");
+
+}else{
+answers[i]=val;
+next();
+}
+}
+
+function next(){
+
+if(questions[current].multi){
+if(!answers[current] || Object.values(answers[current]).filter(v=>v).length===0){
+document.getElementById("tip"+current).innerText="请至少选择一个选项";
+return;
+}
+}
+
+if(current === questions.length - 1){
+calc();
+return;
+}
+
+document.querySelectorAll(".page")[current].classList.remove("active");
+current++;
+document.querySelectorAll(".page")[current].classList.add("active");
+
+document.getElementById("bar").style.width=(current/20*100)+"%";
+}
+
+function calc(){
+
+scores={强化:0,放出:0,操作:0,变化:0,具现:0,特质:0};
+// Q1
+if(answers[0]=="A"){scores.强化+=10;scores.放出+=10;scores.操作+=10;}
+if(answers[0]=="B"){scores.变化+=10;scores.具现+=10;scores.特质+=10;}
+
+// Q2
+let map2={A:"强化",B:"操作",C:"放出",D:"特质",E:"具现",F:"变化"};
+if(answers[1] && map2[answers[1]]) scores[map2[answers[1]]] +=30;
+
+// Q3
+if(answers[2]=="A"){scores.具现+=15;scores.操作+=15;}
+if(answers[2]=="B"){scores.放出+=15;scores.特质+=15;}
+if(answers[2]=="C"){scores.强化+=15;scores.变化+=15;}
+
+// Q4
+let map4={A:"放出",B:"具现",C:"强化",D:"特质",E:"变化",F:"操作"};
+if(answers[3] && map4[answers[3]]) scores[map4[answers[3]]] +=30;
+
+// Q5
+let map5={A:"具现",B:"放出",C:"特质",D:"变化",E:"操作",F:"强化"};
+if(answers[4] && map5[answers[4]]) scores[map5[answers[4]]] +=30;
+
+// Q6
+let map6={A:"放出",B:"操作",C:"具现",D:"强化",E:"变化",F:"放出",G:"特质"};
+if(answers[5] && map6[answers[5]]) scores[map6[answers[5]]] +=30;
+
+// Q7
+if(answers[6]=="A"){scores.具现+=15;scores.操作+=15;}
+if(answers[6]=="B"){scores.强化+=15;scores.放出+=15;}
+if(answers[6]=="C"){scores.变化+=15;scores.特质+=15;}
+if(answers[6]=="D"){for(let k in scores) scores[k]+=5;}
+
+// Q8
+let map8={A:"具现",B:"操作",C:"放出",D:"特质",E:"强化",F:"变化"};
+if(answers[7] && map8[answers[7]]) scores[map8[answers[7]]] +=30;
+
+// Q9
+let map9={A:"强化",B:"特质",C:"变化",D:"操作",E:"具现",F:"放出"};
+if(answers[8] && map9[answers[8]]) scores[map9[answers[8]]] +=30;
+
+// Q10
+let map10={A:"变化",B:"强化",C:"放出",D:"特质",E:"具现",F:"操作"};
+if(answers[9] && map10[answers[9]]) scores[map10[answers[9]]] +=30;
+
+// Q11
+if(answers[10]){
+let map11={A:"具现",B:"强化",C:"操作",D:"特质",E:"放出",F:"强化",G:"放出",H:"变化",I:"特质",J:"变化",K:"具现",L:"操作"};
+for(let k in answers[10]) if(answers[10][k]) scores[map11[k]]+=30;
+}
+
+// Q12
+if(answers[11]){
+let map12={A:"强化",B:"放出",C:"变化",D:"具现",E:"变化",F:"操作",G:"特质",H:"具现",I:"放出",J:"特质",K:"操作",L:"强化"};
+for(let k in answers[11]) if(answers[11][k]) scores[map12[k]]+=30;
+}
+
+// Q13
+if(answers[12]){
+let map13={A:"放出",B:"强化",C:"具现",D:"操作",E:"变化",F:"特质"};
+for(let k in answers[12]) if(answers[12][k]) scores[map13[k]]+=30;
+}
+
+// Q14
+if(answers[13]){
+let map14={A:"强化",B:"具现",C:"具现",D:"放出",E:"操作",F:"强化",G:"变化",H:"变化",I:"放出",J:"特质",K:"特质",L:"操作"};
+for(let k in answers[13]) if(answers[13][k]) scores[map14[k]]+=30;
+}
+
+// Q15~20
+if(answers[14]=="Y") scores.变化+=30; else for(let k in scores) scores[k]+=6;
+if(answers[15]=="Y") scores.操作+=30; else for(let k in scores) scores[k]+=6;
+if(answers[16]=="Y") scores.具现+=30; else for(let k in scores) scores[k]+=6;
+if(answers[17]=="Y") scores.强化+=30; else for(let k in scores) scores[k]+=6;
+if(answers[18]=="Y") scores.特质+=30; else for(let k in scores) scores[k]+=6;
+if(answers[19]=="Y") scores.放出+=30; else for(let k in scores) scores[k]+=6;
+
+// 👉（评分逻辑已完整保留，不再重复写，和你当前一致）
+
+let arr=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+
+pages.innerHTML=`
+<div class="page active result">
+<h2>测试结果</h2>
+<div class="analysis">
+${arr.map(i=>`${i[0]}系：得分 ${i[1]}`).join("<br>")}
+</div>
+<div class="main">您的系别最可能是：${arr[0][0]}</div>
+<canvas id="chart" width="320" height="320"></canvas>
+</div>
+`;
+
+drawChart();
+}
+
+function drawChart(){
+let ctx=document.getElementById("chart").getContext("2d");
+let keys=["强化","变化","具现","操作","放出","特质"];
+let max=Math.max(...Object.values(scores));
+let c=160,r=110;
+
+// 坐标轴
+ctx.strokeStyle="rgba(255,255,255,0.2)";
+keys.forEach((k,i)=>{
+let angle=Math.PI*2/6*i;
+ctx.beginPath();
+ctx.moveTo(c,c);
+ctx.lineTo(c+r*Math.cos(angle),c+r*Math.sin(angle));
+ctx.stroke();
+});
+
+// 多边形
+ctx.beginPath();
+keys.forEach((k,i)=>{
+let angle=Math.PI*2/6*i;
+let val=scores[k]/max;
+let x=c+r*val*Math.cos(angle);
+let y=c+r*val*Math.sin(angle);
+if(i===0) ctx.moveTo(x,y);
+else ctx.lineTo(x,y);
+});
+ctx.closePath();
+ctx.fillStyle="rgba(108,92,231,0.4)";
+ctx.fill();
+ctx.strokeStyle="#6c5ce7";
+ctx.stroke();
+
+// 标注
+ctx.fillStyle="#fff";
+ctx.font="12px sans-serif";
+keys.forEach((k,i)=>{
+let angle=Math.PI*2/6*i;
+let x=c+(r+20)*Math.cos(angle);
+let y=c+(r+20)*Math.sin(angle);
+ctx.fillText(k+"("+scores[k]+")",x-20,y);
+});
+}
+
+</script>
+
+</body>
+</html>
+:::
